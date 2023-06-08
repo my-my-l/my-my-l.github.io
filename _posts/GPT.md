@@ -1,0 +1,213 @@
+# GPT系列论文
+
+# 0.Attention
+
+省流版本：加权求和
+详细版本：三个向量（q,k,v），三个参数矩阵（Q,K,V）
+
+# 1.Decoder of  Transformer
+
+在transformer原模型中的decoder有三层网络，
+1）masked multi-head attention （预测i位置的词时，只能看见i左侧的词）
+2）multi-head attention 负责与encoder通信（cross attention）
+3）前馈神经网络 
+
+在GPT中仅保留1）和3）
+
+# 2.GPT
+
+## 2.1 optimization objective
+
+a standard language modeling objective
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled.png)
+
+根据前k个token预测i位置的token
+
+## 2.2 model architecture
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%201.png)
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%202.png)
+
+**关于GPT的输入输出存在疑问：**
+
+1. GPT在预训练中，是根据输入的n-k~n-1预测n，还是根据n-k~n-1预测n-k+1~n？
+（u是一个词还是输入的token序列）
+2. 如果是根据输入的n-k~n-1预测n，$P(u) = softmax(h_nW_e^T)$中使用的是$h_n$，$h_n$是K行的矩阵，对应的是K个位置的注意力权重，P(u)应该也是K个位置对应的注意力分数？
+3. 如果是根据n-k~n-1预测n-k+1~n，那应该是先预测第1个词，再预测第2个词，……，顺序计算是如何实现并行化的？
+4. 训练语料是很多文本的集合，训练时是按照句子对文本进行分割的吗？以句子为单位喂给GPT?
+
+## 2.3 fine-tuning
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%203.png)
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%204.png)
+
+Q：$h_l^m$是最后一层decoder的m位置的输出，如果用$h_l^mW_E^T$，那么得到的是m位置出现词的分布，可以说明$**h_l^m$中包含的信息主要和第m个词有关**，而不是和整个句子有关，那么为什么选它作为之后线性层的输入？
+**我猜的A**:   在预训练阶段或许$**h_l^m$中包含的信息主要和第m个词有关**是成立的，但在微调过程中，最后一个token是**extract**，随着权重的更新，$**h_l^m**$即extract包含的信息会逐渐变成整个句子的代表？
+
+一些小点：
+
+1. 根据不同任务改变输入的形式
+2. 在微调阶段，论文中提到多任务学习效果更好
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%205.png)
+
+## 2.4 others
+
+1. GPT相较于之前的预训练模型，明确了两个问题：
+1）预训练阶段的优化目标，根据上文预测下文
+2）the most effective way to transfer these learned representations to the target task，不同任务的输入结构不同，在GPT外接一个线性层
+2. 和bert相比
+1）最大区别，bert使用的是encoder结构，预训练的任务相当于完型填空，比GPT更好训练
+      但学习补全下文的GPT的潜力理论上应该比只会完形填空的bert更大
+2）bert参数更多，数据量更大
+
+# 3. GPT-2
+
+## 3.1 相较于GPT
+
+1）模型更大，训练数据量也更大
+2）突出了zero-shot的设定
+      每一个任务都要做fine-tuning，还是很头疼的事情，如果一个模型会做所以任务该多好！
+     ——**zero-shot，做下游任务时，不更新权重，不需要标注数据**
+
+## 3.2 zero-shot
+
+1. 利用语言的灵活性，将所有任务转变为sequence2sequence的问题
+    
+    ![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%206.png)
+    
+2. 引入task condition **p(output | input, task)**
+3. 去掉fine-tuning层
+
+# 4. GPT-3
+
+## 4.1 相较于GPT-2、GPT
+
+1）更大
+2）结构上使用了the Sparse Transformer（没看论文，不晓得和传统的transformer的区别）
+2）meta-learning:（论文自己的定义）重点在于学习不同任务的过程中逐渐具备泛化性？
+3）**in-context learning**：不更新参数，从input中”学习知识“
+4）few-shot,one-shot,zero-shot：效果惊艳
+
+## 4.2 in-context learning
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%207.png)
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%208.png)
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%209.png)
+
+1. 每次in-context的信息不会被model记住
+2. 讨论模型是真的能从示例中学到知识吗？
+1）模型不会从示例中学习，只是示例让模型明确了自己要做的任务
+     证明：给错误例子仍然让正确率上升，更多的示例不会带来更高的正确率
+2）模型真的会根据示例from scratch 学会
+     证明：给的错误示例占比越多，正确率越低，甚至低于50%
+                直接让模型从0开始，学会一个分类任务
+    
+    ![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2010.png)
+    
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2011.png)
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2012.png)
+
+# 5.InstructGPT
+
+## 5.1 修正训练目标
+
+原来预训练的目标：根据网上的数据，生成下一个词
+想要的目标：根据人类的指令，生成有帮助和安全的回答
+解决办法：align with human feedback，RRHF
+（又回到了监督学习）
+
+## 5.2 RRHF
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2013.png)
+
+Step 1：收集了一些QA对，对GPT进行微调，得到**SFT**（论文中说，虽然过拟合了，但过拟合对后续的操作有好处）
+这一步应该就是instruction-tuning
+Step 2：人工对GPT的output进行排序，然后训练一个**reward model**，学会对GPT的output打分
+RM：the SFT model with the final unembedding layer removed
+input：a prompt and response
+output：a scalar reward
+loss：9个回答，两两比较，共36对，每对得分差距越大越好
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2014.png)
+
+Step 3：利用reward model 对GPT进行强化学习，（强化学习的一些细节还不清楚）
+算法：PPO
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2015.png)
+
+相当于两个训练目标，PPO+原始的语言模型目标
+
+## 5.3 result
+
+1.3B的InstructGPT效果比175的GPT效果还要好
+
+|  | GPT | BERT | GPT-2 | GPT-3 | InstructGPT |
+| --- | --- | --- | --- | --- | --- |
+| 结构 | Text & Position Embed
+          |
+decoder*12
+          |
+不同任务接不同的层
+
+输入：512
+decoder：12*768
+batch-size：64 | 使用encoder | 将Layer normalization移动到每个子模块前
+在最后一个子模块后添加Layer normalization
+去掉fine-tuning层
+
+输入：1024
+decoder：48*1600
+batch-size:512 | 使用了the Sparse Transformer
+
+decoder:96*12288
+batch-size:3.2M |  |
+| 参数 | 117M | 0.3B | 1.5B | 175B | 1.3B |
+| 创新点 | pre-training
+fine-tuning | pre-training
+fine-tuning | zero-shot | in-context learning | RRHF |
+
+# 6. chatGPT
+
+chatGPT的模型和算法基础：
+transformer、instruction-tuning、COT、RRHF等
+
+## 6.1 COT
+
+### In-context learning COT：
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2016.png)
+
+给模型示例，一步步求解，期待模型读入输入后，会模仿输入，一步步求解问题
+
+### Zero-shot COT:
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2017.png)
+
+只多给一句提示：Let‘s think step by step. 过于神奇，原因可能是预训练时语料中有类似的语句？
+
+### Least-to-most prompting
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2018.png)
+
+先让模型自己将推理问题拆解成一个个小而简单的问题，然后再依次解决
+
+# 7. 模型增强？(一些小思考)
+
+![Untitled](GPT%E7%B3%BB%E5%88%97%E8%AE%BA%E6%96%87%20413a07bde9d5456b8f931e1cc0a8c256/Untitled%2019.png)
+
+1）随着模型越来越大，即使微调，代价也很大
+2）既然人无完人，那么出现一个无所不能无所不精的模型似乎是不可能的
+3）在特定领域总是需要一些”专才“模型
+4）在通用语言模型的基础上，通过adapter和外部工具，让模型精于某领域，应该会有很多应用吧？
+
+adapter听起来很好玩，可以继续了解一下
+
+[(3 封私信 / 81 条消息) Bert为什么要Mask？ - 知乎 (zhihu.com)](https://www.zhihu.com/question/404452350)**********************，好回答**********************
