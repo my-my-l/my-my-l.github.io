@@ -1,3 +1,15 @@
+---
+title: 'GPT 系列论文'
+date: 2022-12-14
+permalink: /posts/2022/12/GPT/
+tags:
+  - GPT
+  - NLP
+  - LLM
+---
+
+精读了GPT、GPT2、GPT3、InstructGPT四篇论文，试图解释“chatGPT为什么这么强？”。
+
 # GPT系列论文
 
 # 0.Attention
