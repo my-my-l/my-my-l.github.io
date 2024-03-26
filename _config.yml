@@ -81,7 +81,7 @@ analytics:
 # Site Author
 author:
   name             : "Liu Mingyang"
-  avatar           : "beautiful_profile.png"
+ # avatar           : "beautiful_profile.png"
   bio              : "Your biography for the left-hand sidebar"
   location         : "HITSZ"
   employer         :
